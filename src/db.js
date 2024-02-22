@@ -18,25 +18,29 @@ async function initDB() {
                 content TEXT
             );
         `);
-        console.log('db initialized.');
+        console.log('DB initialized.');
     } catch (err) {
         console.error(`Unable to connect db: ${err}`);
     }
 }
 
-async function addMessage(message) {
+async function addMessage(message, clientOffset, callback) {
     let result;
     try {
-        result = await dbConnection.run('INSERT INTO messages (content) VALUES (?)', message);
+        result = await dbConnection.run('INSERT INTO messages (content, client_offset) VALUES (?, ?)', message, clientOffset);
     } catch (err) {
-        console.error(`Unable to add message into db: ${err}`);
+        if (err.errno === 19) {
+            callback(); // the message was already inserted, so we notify the client
+        } else {
+            console.error(`Unable to add message into db: ${err}`);
+        }
     }
     return result;
 }
 
 async function getMessage(ids, callback) {
     try {
-        await dbConnection.each('SELECT id, content FROM messages WHERE id > ?', ids, callback);
+        await dbConnection.each('SELECT id, content, client_offset FROM messages WHERE id > ?', ids, callback);
     } catch (err) {
         console.error(`Unable to retrive a message from db: ${err}`);        
     }

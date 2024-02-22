@@ -1,7 +1,11 @@
+let counter = 0;
+
 const socket = io({
     auth: {
       serverOffset: 0
-    }
+    },
+    ackTimeout: 10000,
+    retries: 3,
 });
 
 const form = document.getElementById('form');
@@ -24,7 +28,8 @@ form.addEventListener('submit', (e) => {
     e.preventDefault(); // prevent submit of the form action
     const message = input.value;
     if (message) {
-        socket.emit('chatMessage', message);
+        const clientOffset = `${socket.id}-${counter++}`;
+        socket.emit('chatMessage', message, clientOffset);
         input.value = '';
     }
 })
